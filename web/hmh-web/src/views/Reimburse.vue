@@ -555,41 +555,6 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        loading.value = true
-        
-        // 检查是否超出限额
-        const checkResult = await request('/api/reimburse/rule/check', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            typeId: form.type,
-            amount: form.money
-          })
-        })
-        
-        // 如果超出限额，显示警告
-        if (checkResult && checkResult.data && checkResult.data.exceeded) {
-          const confirmResult = await ElMessageBox.confirm(
-            `报销金额 ¥${form.money} 超出了限额 ¥${checkResult.data.maxAmount}，是否继续提交？`,
-            '金额超限提醒',
-            {
-              confirmButtonText: '继续提交',
-              cancelButtonText: '取消',
-              type: 'warning'
-            }
-          ).catch(() => false)
-          
-          if (!confirmResult) {
-            loading.value = false
-            return
-          }
-        }
-        
-        // 提交报销
-        console.log('提交报销数据:', form)
-        
         const result = await request('/api/reimburse/save', {
           method: 'POST',
           headers: {
@@ -598,20 +563,13 @@ const handleSubmit = async () => {
           body: JSON.stringify(form)
         })
         
-        console.log('保存报销响应:', result)
+        if (!result) return
         
-        if (result.code === 200 || result.success === true) {
-          ElMessage.success(result.message || '保存成功')
-          dialogVisible.value = false
-          getList()
-        } else {
-          ElMessage.error(result.message || '保存失败')
-        }
+        ElMessage.success('保存成功')
+        dialogVisible.value = false
+        getList()
       } catch (error) {
-        console.error('保存报销失败:', error)
-        ElMessage.error(`保存失败: ${error.message}`)
-      } finally {
-        loading.value = false
+        ElMessage.error('保存失败')
       }
     }
   })

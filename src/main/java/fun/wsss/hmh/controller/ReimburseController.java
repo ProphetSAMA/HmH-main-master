@@ -8,16 +8,10 @@ import fun.wsss.hmh.service.ReimburseService;
 import fun.wsss.hmh.service.TypeService;
 import fun.wsss.hmh.service.UserService;
 import fun.wsss.hmh.utils.TokenUtil;
-import fun.wsss.hmh.service.InvoiceService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import fun.wsss.hmh.entity.Invoice;
-import fun.wsss.hmh.common.Result;
-import fun.wsss.hmh.utils.UserUtil;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -43,9 +37,6 @@ public class ReimburseController {
 
     @Autowired
     private NotificationService notificationService;
-
-    @Autowired
-    private InvoiceService invoiceService;
 
     /**
      * 保存或更新报销信息
@@ -223,66 +214,5 @@ public class ReimburseController {
         }
 
         return paramMap;
-    }
-
-    // 修改发票OCR识别接口
-    @PostMapping("/invoice/ocr")
-    public ResponseEntity<?> ocrInvoice(@RequestParam("file") MultipartFile file) {
-        Map<String, Object> result = invoiceService.ocrInvoice(file);
-        if (result != null) {
-            return ResponseEntity.ok(Map.of("success", true, "data", result));
-        } else {
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "OCR识别失败"));
-        }
-    }
-
-    // 新增发票关联接口
-    @PostMapping("/invoice/associate")
-    public ResponseEntity<?> associateInvoice(@RequestBody Map<String, Object> request) {
-        Integer reimburseId = (Integer) request.get("reimburseId");
-        // 从请求中获取发票信息并创建新的 Invoice 对象
-        Map<String, Object> invoiceMap = (Map<String, Object>) request.get("invoice");
-        Invoice invoice = new Invoice();
-        invoice.setInvoiceNo((String) invoiceMap.get("invoiceNo"));
-        invoice.setInvoiceCode((String) invoiceMap.get("invoiceCode"));
-        
-        Reimburse reimburse = reimburseService.getReimburseById(new Reimburse(reimburseId));
-        if (reimburse != null) {
-            if (invoiceService.checkDuplicateInvoice(invoice)) {
-                return ResponseEntity.status(400).body(Map.of("success", false, "message", "重复发票，不能报销"));
-            }
-            invoiceService.associateInvoice(reimburse, invoice);
-            return ResponseEntity.ok(Map.of("success", true, "message", "发票关联成功"));
-        } else {
-            return ResponseEntity.status(404).body(Map.of("success", false, "message", "报销单不存在"));
-        }
-    }
-
-    // 新增获取报销单关联发票列表接口
-    @GetMapping("/invoice/list/{reimburseId}")
-    public ResponseEntity<?> getInvoicesByReimburseId(@PathVariable Integer reimburseId) {
-        List<Invoice> invoices = invoiceService.getInvoicesByReimburseId(reimburseId);
-        return ResponseEntity.ok(Map.of("success", true, "data", invoices));
-    }
-
-    /**
-     * 获取可用于关联发票的报销单列表
-     */
-    @GetMapping("/available")
-    public Result getAvailableReimburse() {
-        try {
-            List<Reimburse> reimburses = reimburseService.getAvailableForInvoice();
-            
-            // 打印调试信息
-            System.out.println("可用报销单数量: " + reimburses.size());
-            for (Reimburse r : reimburses) {
-                System.out.println("报销单ID: " + r.getId() + ", 状态: " + r.getStatus() + ", 用户ID: " + r.getSqUserId());
-            }
-            
-            return Result.success(reimburses);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error().message("获取可用报销单失败: " + e.getMessage());
-        }
     }
 }

@@ -43,23 +43,11 @@
           </span>
         </template>
       </el-dialog>
-
-      <el-upload
-        class="avatar-uploader"
-        action="/api/user/avatar"
-        :show-file-list="false"
-        :on-success="handleAvatarSuccess"
-        :before-upload="beforeAvatarUpload"
-        :data="{ userId: currentUser.id }"
-      >
-        <img v-if="currentUser.avatar" :src="currentUser.avatar" class="avatar" />
-        <img v-else src="/default-avatar.jpg" class="avatar" />
-      </el-upload>
     </div>
   </template>
   
   <script setup>
-  import { ref, onMounted, reactive } from 'vue'
+  import { ref, onMounted } from 'vue'
   import { ElMessage } from 'element-plus'
   import { request } from '../utils/request'
   
@@ -81,10 +69,8 @@
     ]
   }
 
-  const currentUser = reactive({
-    id: 1, // 实际应从登录信息获取
-    avatar: '' // 登录后赋值
-  })
+  // 从 localStorage 中获取用户信息
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
   // 获取用户信息
   const getUserInfo = async () => {
@@ -104,7 +90,7 @@
         return
       }
       
-      if (result.code !== 200) {
+      if (!result.success) {
         console.error('Request not successful:', result)
         ElMessage.error(result.message || '获取用户信息失败')
         return
@@ -159,7 +145,7 @@
             return
           }
           
-          if (result.code !== 200) {
+          if (!result.success) {
             console.error('Update not successful:', result)
             ElMessage.error(result.message || '保存失败')
             return
@@ -174,29 +160,6 @@
         }
       }
     })
-  }
-  
-  const handleAvatarSuccess = (response) => {
-    if (response.success) {
-      currentUser.avatar = response.avatar
-      ElMessage.success('头像上传成功')
-    } else {
-      ElMessage.error(response.message || '上传失败')
-    }
-  }
-
-  const beforeAvatarUpload = (file) => {
-    const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
-    const isLt2M = file.size / 1024 / 1024 < 2
-    if (!isJPG) {
-      ElMessage.error('只能上传 JPG/PNG 格式图片!')
-      return false
-    }
-    if (!isLt2M) {
-      ElMessage.error('图片大小不能超过 2MB!')
-      return false
-    }
-    return true
   }
   
   onMounted(() => {

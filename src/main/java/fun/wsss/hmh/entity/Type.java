@@ -1,26 +1,35 @@
 package fun.wsss.hmh.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * 报销类型实体类
- */
-@Data
-@TableName("t_type")
+@Getter
+@Setter
 public class Type {
-    
-    /**
-     * 类型ID
-     */
-    @TableId(type = IdType.AUTO)
-    private Integer id;
-    
-    /**
-     * 类型名称
-     */
-    private String type;
+
+	private Integer id;
+	private String type;
+	
+	public Type() {
+		super();
+	}
+	public Type(Integer id, String type) {
+		super();
+		this.id = id;
+		this.type = type;
+	}
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+	
+	
 }

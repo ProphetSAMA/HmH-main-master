@@ -17,59 +17,21 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard.vue'),
-        meta: { 
-          requiresAuth: true,
-          breadcrumb: ['仪表盘']
-        }
-      },
-      // 公告
-      {
-        path: 'news',
-        name: 'News',
-        component: () => import('../views/News.vue'),
-        meta: {
-          requiresAuth: true,
-          breadcrumb: ['公告管理', '公告列表']
-        }
+        meta: { requiresAuth: true }
       },
       // 报销管理
       {
         path: 'reimburse',
         name: 'Reimburse',
         component: () => import('../views/Reimburse.vue'),
-        meta: { 
-          requiresAuth: true,
-          breadcrumb: ['报销管理', '报销记录']
-        }
+        meta: { requiresAuth: true }
       },
       // 个人信息
       {
         path: 'profile',
         name: 'Profile',
         component: () => import('../views/Profile.vue'),
-        meta: {
-          requiresAuth: true,
-          breadcrumb: ['个人中心', '个人信息']
-        }
-      },
-      // 数据统计
-      {
-        path: 'stats',
-        name: 'Stats',
-        component: () => import('../views/Stats.vue'),
-        meta: { 
-          requiresAuth: true,
-          breadcrumb: ['数据统计']
-        }
-      },
-      {
-        path: 'edit',
-        name: 'Edit',
-        component: () => import('../views/Edit.vue'),
-        meta: { 
-          requiresAuth: true,
-          breadcrumb: ['报销管理', '新增报销']
-        }
+        meta: { requiresAuth: true }
       },
       // 成员管理
       {
@@ -78,28 +40,7 @@ const routes = [
         component: () => import('../views/Member.vue'),
         meta: { 
           requiresAuth: true,
-          requiresAdmin: true,
-          breadcrumb: ['系统管理', '成员管理']
-        }
-      },
-      // 发票管理
-      {
-        path: 'invoice',
-        name: 'Invoice',
-        component: () => import('../views/Invoice.vue'),
-        meta: { 
-          requiresAuth: true,
-          breadcrumb: ['财务管理', '发票管理']
-        }
-      },
-      {
-        path: 'reimburse-rule',
-        name: 'ReimburseRule',
-        component: () => import('../views/ReimburseRule.vue'),
-        meta: {
-          title: '报销规则设定',
-          requiresAuth: true,
-          roles: ['管理员', '经理'] // 只允许管理员和经理访问
+          requiresAdmin: true
         }
       }
     ]

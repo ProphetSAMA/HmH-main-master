@@ -1,12 +1,22 @@
 package fun.wsss.hmh.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import fun.wsss.hmh.entity.Type;
-import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
- * 报销类型Dao接口
+ * 报销类型Dao
+ *
+ * @author h
  */
-@Mapper
-public interface TypeDao extends BaseMapper<Type> {
+@Repository
+public interface TypeDao {
+
+    /**
+     * 查询所有报销类型
+     *
+     * @return 报销类型列表
+     */
+    public List<Type> list();
 }

@@ -74,18 +74,4 @@ public interface UserService {
      * @return 用户信息
      */
     User getUserById(int id);
-
-    /**
-     * 获取用户总数
-     * @return 用户总数
-     */
-    int getUserCount();
-
-    /**
-     * 更新用户头像
-     *
-     * @param userId 用户id
-     * @param avatarUrl 头像URL
-     */
-    void updateAvatar(Integer userId, String avatarUrl);
 }

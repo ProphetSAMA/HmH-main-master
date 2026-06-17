@@ -130,10 +130,6 @@ public class Reimburse {
         this.endTime = endTime;
     }
 
-    public Reimburse(Integer id) {
-        this.id = id;
-    }
-
     public void setId(Integer id) {
         this.id = id;
     }

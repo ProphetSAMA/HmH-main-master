@@ -3,8 +3,6 @@ package fun.wsss.hmh.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import fun.wsss.hmh.entity.Reimburse;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -62,73 +60,5 @@ public interface ReimburseService extends IService<Reimburse> {
 	 * @return 统计结果
 	 */
 	Map<String, Object> getReimburseStats();
-
-	/**
-	 * 获取总报销金额
-	 * @return 总报销金额
-	 */
-	BigDecimal getTotalAmount();
-
-	/**
-	 * 获取待审批报销数量
-	 * @return 待审批报销数量
-	 */
-	Integer getPendingCount();
-
-	/**
-	 * 获取已拒绝报销数量
-	 * @return 已拒绝报销数量
-	 */
-	Integer getRejectedCount();
-
-	/**
-	 * 获取已批准报销数量
-	 * @return 已批准报销数量
-	 */
-	Integer getApprovedCount();
-
-	/**
-	 * 获取本月报销人数
-	 * @return 本月报销人数
-	 */
-	Integer getMonthlyUserCount();
-
-	/**
-	 * 获取同比增长率
-	 * @return 同比增长率
-	 */
-	Double getGrowthRate();
-
-	/**
-	 * 获取本月报销金额
-	 * @param month 月份
-	 * @return 本月报销金额
-	 */
-	BigDecimal getMonthlyAmount(LocalDate month);
-
-	/**
-	 * 获取本月报销数量
-	 * @param month 月份
-	 * @return 本月报销数量
-	 */
-	Integer getMonthlyCount(LocalDate month);
-
-	/**
-	 * 获取分类数据
-	 * @return 分类数据
-	 */
-	List<Map<String, Object>> getCategoryData();
-
-	/**
-	 * 获取可用于关联发票的报销单列表
-	 * @return 可用报销单列表
-	 */
-	List<Reimburse> getAvailableForInvoice();
-
-
-	/**
-	 * 获取本月报销总额
-	 */
-	BigDecimal getMonthlyAmount();
 
 }

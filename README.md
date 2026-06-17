@@ -1,10 +1,4 @@
-# 基于Java的出差报销管理系统（合并版本）
-
-> ⚠️ **注意**：此仓库为合并版本，整合了以下三个仓库的代码和提交历史：
-> - [HmH](https://github.com/ProphetSAMA/HmH) - 最旧版本
-> - [HmH-main](https://github.com/ProphetSAMA/HmH-main) - 次新版本
-> - [HmH-main-master](https://github.com/ProphetSAMA/HmH-main-master) - 最新版本（当前仓库）
-
+# 基于Java的出差报销管理系统
 ## 项目简介
 本项目是一个基于Java的出差报销管理系统，主要功能有：用户登录、出差申请、报销申请、审批、统计等。系统采用B/S架构，前端使用Vue，后端使用Java语言，数据库使用MySQL
 

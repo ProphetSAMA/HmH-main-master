@@ -1,14 +1,13 @@
 package fun.wsss.hmh.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
 import fun.wsss.hmh.dao.UserDao;
 import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +16,7 @@ import java.util.Map;
  * @author h
  */
 @Service("userService")
-public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserService {
+public class UserServiceImpl implements UserService {
 
     @Resource
     private UserDao userDao;
@@ -127,20 +126,5 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     @Override
     public User getUserById(int id) {
         return userDao.getUserById(id);
-    }
-
-    @Override
-    public int getUserCount() {
-        return Math.toIntExact(count()); // 使用MyBatis-Plus的count()方法
-    }
-
-    @Override
-    public void updateAvatar(Integer userId, String avatarUrl) {
-        User user = userDao.selectById(userId);
-        if (user != null) {
-            user.setAvatar(avatarUrl);
-
-            userDao.updateById(user);
-        }
     }
 }
