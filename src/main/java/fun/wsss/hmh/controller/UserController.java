@@ -131,12 +131,14 @@ public class UserController {
      * 用户修改密码
      *
      * @param id          用户 ID
+     * @param oldPassword 旧密码
      * @param newPassword 新密码
      * @return 修改结果
      */
     @PostMapping("/modifyPassword")
     public ResponseEntity<?> modifyPassword(
             @RequestParam("id") Integer id,
+            @RequestParam("oldPassword") String oldPassword,
             @RequestParam("newPassword") String newPassword) {
 
         // 从数据库获取当前用户信息
@@ -144,6 +146,16 @@ public class UserController {
 
         if (currentUser == null) {
             return ResponseEntity.ok(Map.of("success", false, "message", "用户未找到"));
+        }
+
+        // 验证旧密码
+        if (!currentUser.getPassword().equals(oldPassword)) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "旧密码错误"));
+        }
+
+        // 验证新密码强度
+        if (newPassword == null || newPassword.length() < 6) {
+            return ResponseEntity.ok(Map.of("success", false, "message", "新密码长度不能少于6位"));
         }
 
         // 更新密码，并保留其他字段
