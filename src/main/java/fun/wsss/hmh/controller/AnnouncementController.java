@@ -4,7 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import fun.wsss.hmh.common.Result;
 import fun.wsss.hmh.entity.Announcement;
+import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.AnnouncementService;
+import fun.wsss.hmh.service.UserService;
+import fun.wsss.hmh.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +20,7 @@ import java.util.List;
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
+    private final UserService userService;
 
     @GetMapping("/list")
     public Result getList(
@@ -27,13 +32,39 @@ public class AnnouncementController {
     }
 
     @PostMapping("/save")
-    public Result save(@RequestBody Announcement announcement) {
+    public Result save(@RequestBody Announcement announcement, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
+        // 验证权限：只有管理员和经理可以发布公告
+        if (!"管理员".equals(user.getRoleName()) && !"经理".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法发布公告");
+        }
+
+        // 设置发布者信息
+        announcement.setPublisherId(user.getId());
+        announcement.setPublisherName(user.getTrueName());
+
         announcementService.saveAnnouncement(announcement);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
-    public Result delete(@PathVariable Long id) {
+    public Result delete(@PathVariable Long id, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
+        // 验证权限：只有管理员可以删除公告
+        if (!"管理员".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法删除公告");
+        }
+
         announcementService.deleteAnnouncement(id);
         return Result.success();
     }
