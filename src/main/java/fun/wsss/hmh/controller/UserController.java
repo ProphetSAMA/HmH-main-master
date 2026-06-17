@@ -24,7 +24,8 @@ import java.util.Map;
 @RequestMapping("/api/user")
 public class UserController {
 
-    private static final String SECRET_KEY = "your-secret-key";
+    private static final String SECRET_KEY = System.getenv("JWT_SECRET_KEY") != null ?
+            System.getenv("JWT_SECRET_KEY") : "default-dev-key-change-in-production";
 
     @Autowired
     private UserService userService;

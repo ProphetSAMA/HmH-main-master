@@ -22,7 +22,8 @@ import java.util.Map;
  */
 public class JwtInterceptor implements HandlerInterceptor {
 
-    private static final String SECRET_KEY = "your-secret-key";
+    private static final String SECRET_KEY = System.getenv("JWT_SECRET_KEY") != null ?
+            System.getenv("JWT_SECRET_KEY") : "default-dev-key-change-in-production";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<String> excludePaths = Arrays.asList(
             "/api/user/login",
