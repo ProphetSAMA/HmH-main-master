@@ -4,6 +4,7 @@ package fun.wsss.hmh.service.impl;
 import fun.wsss.hmh.dao.UserDao;
 import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.UserService;
+import fun.wsss.hmh.utils.PasswordUtil;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -29,7 +30,21 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User login(User user) {
-        return userDao.login(user);
+        // 先根据用户名查询用户
+        User dbUser = userDao.selectOne(
+                new QueryWrapper<User>().eq("userName", user.getUserName())
+        );
+
+        if (dbUser == null) {
+            return null;
+        }
+
+        // 验证密码
+        if (PasswordUtil.verifyPassword(user.getPassword(), dbUser.getPassword())) {
+            return dbUser;
+        }
+
+        return null;
     }
 
     /**
@@ -95,6 +110,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public int update(User user) {
+        // 如果包含密码更新，需要加密
+        if (user.getPassword() != null) {
+            user.setPassword(PasswordUtil.encryptPassword(user.getPassword()));
+        }
         return userDao.updateById(user);
     }
 
@@ -106,6 +125,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public int add(User user) {
+        // 加密密码
+        if (user.getPassword() != null) {
+            user.setPassword(PasswordUtil.encryptPassword(user.getPassword()));
+        }
         return userDao.insert(user);
     }
 
