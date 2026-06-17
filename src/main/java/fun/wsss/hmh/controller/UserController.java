@@ -6,6 +6,8 @@ import fun.wsss.hmh.entity.PageBean;
 import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.UserService;
 import fun.wsss.hmh.util.StringUtil;
+import fun.wsss.hmh.utils.LoginAttemptService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private LoginAttemptService loginAttemptService;
+
     /**
      * 用户登录接口
      *
@@ -37,7 +42,7 @@ public class UserController {
      * @return 登录结果
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User user) {
+    public ResponseEntity<?> login(@RequestBody User user, HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
 
         // 参数校验
@@ -57,13 +62,31 @@ public class UserController {
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 检查登录限制
+        String clientIP = request.getRemoteAddr();
+        String loginKey = user.getUserName() + ":" + clientIP;
+
+        if (loginAttemptService.isBlocked(loginKey)) {
+            int remainingTime = loginAttemptService.getRemainingLockTime(loginKey);
+            response.put("success", false);
+            response.put("message", "登录尝试次数过多，请" + remainingTime + "秒后再试");
+            return ResponseEntity.status(429).body(response);
+        }
+
         // 登录逻辑
         User resultUser = userService.login(user);
         if (resultUser == null) {
+            // 记录登录失败
+            loginAttemptService.loginFailed(loginKey);
+
+            int remainingAttempts = loginAttemptService.getRemainingAttempts(loginKey);
             response.put("success", false);
-            response.put("message", "用户名或密码错误！");
+            response.put("message", "用户名或密码错误！剩余尝试次数：" + remainingAttempts);
             return ResponseEntity.status(401).body(response);
         }
+
+        // 登录成功，清除尝试记录
+        loginAttemptService.loginSucceeded(loginKey);
 
         // 生成 token（使用用户ID和角色信息）
         String token = JWT.create()
