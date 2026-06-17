@@ -7,13 +7,17 @@ import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.UserService;
 import fun.wsss.hmh.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 用户管理 Controller
@@ -28,6 +32,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Value("${upload.avatar-path}")
+    private String avatarPath;
 
     /**
      * 用户登录接口
@@ -69,6 +76,7 @@ public class UserController {
                 .withClaim("userId", resultUser.getId())
                 .withClaim("userName", resultUser.getUserName())
                 .withClaim("roleName", resultUser.getRoleName())
+                .withClaim("trueName", resultUser.getTrueName())
                 .withExpiresAt(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24小时过期
                 .sign(Algorithm.HMAC256(SECRET_KEY));
 
@@ -79,6 +87,7 @@ public class UserController {
         response.put("userId", resultUser.getId());
         response.put("userName", resultUser.getUserName());
         response.put("roleName", resultUser.getRoleName());
+        response.put("trueName", resultUser.getTrueName());
         return ResponseEntity.ok(response);
     }
 
@@ -220,6 +229,31 @@ public class UserController {
             return ResponseEntity.ok(Map.of("success", true, "message", "更新成功"));
         } else {
             return ResponseEntity.ok(Map.of("success", false, "message", "更新失败"));
+        }
+    }
+
+    @PostMapping("/avatar")
+    public ResponseEntity<?> uploadAvatar(@RequestParam("file") MultipartFile file,
+                                          @RequestParam("userId") Integer userId) {
+        try {
+            String suffix = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+            String filename = UUID.randomUUID().toString() + suffix;
+            String filePath = avatarPath + File.separator + filename;
+
+            File dest = new File(filePath);
+            if (!dest.getParentFile().exists()) dest.getParentFile().mkdirs();
+            file.transferTo(dest);
+
+            // 更新用户头像
+            userService.updateAvatar(userId, "/avatars/" + filename);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("avatar", "/avatars/" + filename);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(Map.of("success", false, "message", "头像上传失败"));
         }
     }
 }

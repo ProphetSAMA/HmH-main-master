@@ -1,29 +1,26 @@
 package fun.wsss.hmh.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import fun.wsss.hmh.dao.TypeDao;
 import fun.wsss.hmh.entity.Type;
 import fun.wsss.hmh.service.TypeService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * 类型Service实现类
- * @author h
+ * 报销类型服务实现类
  */
-@Service("typeService")
-public class TypeServiceImpl implements TypeService {
-
-	@Autowired
-	private TypeDao typeDao;
-
-	/**
-	 * 查询所有类型
-	 * @return 类型列表
-	 */
-	@Override
-	public List<Type> list() {
-		return typeDao.list();
-	}
+@Service
+public class TypeServiceImpl extends ServiceImpl<TypeDao, Type> implements TypeService {
+    
+    @Override
+    public List<Type> getAllTypes() {
+        return this.list();
+    }
+    
+    @Override
+    public Type getTypeById(Integer id) {
+        return this.getById(id);
+    }
 }

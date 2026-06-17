@@ -1,94 +1,67 @@
 package fun.wsss.hmh.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 /**
- * 用户实体
+ * 用户实体类
  */
-@Getter
-@Setter
+@Data
 @TableName("t_user")
 public class User {
-
-    @TableId
-    private Integer id; // 编号
-
+    
+    /**
+     * 用户ID
+     */
+    @TableId(type = IdType.AUTO)
+    private Integer id;
+    
+    /**
+     * 用户名
+     */
     @TableField("userName")
-    private String userName; // 用户名
-
-    @TableField("password")
-    private String password; // 密码
-
+    private String userName;
+    
+    /**
+     * 密码
+     */
+    private String password;
+    
+    /**
+     * 真实姓名
+     */
     @TableField("trueName")
-    private String trueName; // 真实姓名
-
-    @TableField("email")
-    private String email; // 邮件
-
-    @TableField("phone")
-    private String phone; // 联系电话
-
+    private String trueName;
+    
+    /**
+     * 电话
+     */
+    private String phone;
+    
+    /**
+     * 邮箱
+     */
+    private String email;
+    
+    /**
+     * 角色名称
+     */
     @TableField("roleName")
-    private String roleName; // 角色名称 系统管理员 经理 员工
+    private String roleName;
+    
+    /**
+     * 头像
+     */
+    private String avatar;
 
-    public Integer getId() {
-        return id;
+    public String getAvatar() {
+        return avatar;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getTrueName() {
-        return trueName;
-    }
-
-    public void setTrueName(String trueName) {
-        this.trueName = trueName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
-    }
-
 }
