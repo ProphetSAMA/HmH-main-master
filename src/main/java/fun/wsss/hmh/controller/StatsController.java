@@ -128,27 +128,29 @@ public class StatsController {
     @GetMapping("/monthly")
     public Result getMonthlyStats() {
         try {
-            // 这里应该从数据库获取实际数据
-            // 为了演示，我们使用模拟数据
+            // 从数据库获取实际数据
             List<Map<String, Object>> data = new ArrayList<>();
-            
+
             // 生成最近6个月的数据
-            Calendar calendar = Calendar.getInstance();
+            LocalDate now = LocalDate.now();
             for (int i = 5; i >= 0; i--) {
-                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) - (i == 5 ? 0 : 1));
-                
+                LocalDate month = now.minusMonths(i);
+                String monthStr = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
                 Map<String, Object> monthData = new HashMap<>();
-                monthData.put("month", String.format("%d-%02d", 
-                    calendar.get(Calendar.YEAR), 
-                    calendar.get(Calendar.MONTH) + 1));
-                
-                // 生成1000-5000之间的随机金额
-                double amount = 1000 + Math.random() * 4000;
-                monthData.put("amount", Math.round(amount * 100) / 100.0);
-                
+                monthData.put("month", monthStr);
+
+                // 从数据库获取该月的报销金额
+                BigDecimal amount = reimburseService.getMonthlyAmount(month);
+                monthData.put("amount", amount != null ? amount : BigDecimal.ZERO);
+
+                // 从数据库获取该月的报销数量
+                Integer count = reimburseService.getMonthlyCount(month);
+                monthData.put("count", count != null ? count : 0);
+
                 data.add(monthData);
             }
-            
+
             return Result.success(data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -162,23 +164,8 @@ public class StatsController {
     @GetMapping("/category")
     public Result getCategoryStats() {
         try {
-            // 这里应该从数据库获取实际数据
-            // 为了演示，我们使用模拟数据
-            List<Map<String, Object>> data = new ArrayList<>();
-            
-            // 添加各类别数据
-            String[] categories = {"车补", "餐补", "交通补", "住宿"};
-            for (String category : categories) {
-                Map<String, Object> categoryData = new HashMap<>();
-                categoryData.put("name", category);
-                
-                // 生成500-3000之间的随机金额
-                double value = 500 + Math.random() * 2500;
-                categoryData.put("value", Math.round(value * 100) / 100.0);
-                
-                data.add(categoryData);
-            }
-            
+            // 从数据库获取实际数据
+            List<Map<String, Object>> data = reimburseService.getCategoryStats();
             return Result.success(data);
         } catch (Exception e) {
             e.printStackTrace();
