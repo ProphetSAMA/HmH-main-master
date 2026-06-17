@@ -3,7 +3,11 @@ package fun.wsss.hmh.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import fun.wsss.hmh.common.Result;
 import fun.wsss.hmh.entity.Invoice;
+import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.InvoiceService;
+import fun.wsss.hmh.service.UserService;
+import fun.wsss.hmh.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,8 +21,9 @@ import java.util.Map;
 @RequestMapping("/api/invoice")
 @RequiredArgsConstructor
 public class InvoiceController {
-    
+
     private final InvoiceService invoiceService;
+    private final UserService userService;
     
     /**
      * 获取发票分页列表
@@ -60,7 +65,24 @@ public class InvoiceController {
      * 删除发票
      */
     @DeleteMapping("/{id}")
-    public Result deleteInvoice(@PathVariable Integer id) {
+    public Result deleteInvoice(@PathVariable Integer id, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
+        // 验证发票是否存在
+        Invoice invoice = invoiceService.getById(id);
+        if (invoice == null) {
+            return Result.error().message("发票不存在");
+        }
+
+        // 验证权限：只有发票所有者或管理员可以删除
+        if (!invoice.getUserId().equals(user.getId()) && !"管理员".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法删除此发票");
+        }
+
         boolean success = invoiceService.deleteInvoice(id);
         return success ? Result.success() : Result.error("删除失败");
     }
