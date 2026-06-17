@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -44,7 +45,7 @@ public class Reimburse {
      * 报销金额
      */
     @TableField("money")
-    private Double money;
+    private BigDecimal money;
 
     /**
      * 报销原因
@@ -110,7 +111,7 @@ public class Reimburse {
         super();
     }
 
-    public Reimburse(Integer id, Integer sqUserId, Integer spUserId, Integer cType, Double money, Integer status,
+    public Reimburse(Integer id, Integer sqUserId, Integer spUserId, Integer cType, BigDecimal money, Integer status,
                      String reason, String denyReason, Integer type, Integer typeId, String spName, String sqName,
                      Date createTime, Date endTime) {
         super();
@@ -146,7 +147,7 @@ public class Reimburse {
         this.cType = cType;
     }
 
-    public void setMoney(Double money) {
+    public void setMoney(BigDecimal money) {
         this.money = money;
     }
 
@@ -206,7 +207,7 @@ public class Reimburse {
         return cType;
     }
 
-    public Double getMoney() {
+    public BigDecimal getMoney() {
         return money;
     }
 
