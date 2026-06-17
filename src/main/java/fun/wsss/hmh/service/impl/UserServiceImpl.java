@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> find(Map<String, Object> map) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        
+
         // 添加查询条件
         if (map.get("userName") != null && !map.get("userName").toString().isEmpty()) {
             queryWrapper.like("userName", map.get("userName"));
@@ -49,12 +49,20 @@ public class UserServiceImpl implements UserService {
         if (map.get("roleName") != null && !map.get("roleName").toString().isEmpty()) {
             queryWrapper.eq("roleName", map.get("roleName"));
         }
-        
-        // 添加分页
+
+        // 添加分页 - 使用参数化查询防止SQL注入
         if (map.get("start") != null && map.get("size") != null) {
-            queryWrapper.last("LIMIT " + map.get("start") + "," + map.get("size"));
+            try {
+                int start = Integer.parseInt(map.get("start").toString());
+                int size = Integer.parseInt(map.get("size").toString());
+                if (start >= 0 && size > 0 && size <= 100) {
+                    queryWrapper.last("LIMIT " + start + "," + size);
+                }
+            } catch (NumberFormatException e) {
+                // 忽略无效的分页参数
+            }
         }
-        
+
         return userDao.selectList(queryWrapper);
     }
 
