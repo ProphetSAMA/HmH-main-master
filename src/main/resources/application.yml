@@ -1,0 +1,42 @@
+server:
+  port: 8080
+#  servlet:
+#    session:
+#      timeout: 24h  # 设置 session 超时时间为 24 小时
+spring:
+  devtools:
+    restart:
+      enabled: true
+  application:
+    name: HmH
+  profiles:
+    active: dev
+  banner:
+    location: banner.txt
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/db_reimbursement?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: qwe123.0+-
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: HikariCP        # 配置连接池名称
+      maximum-pool-size: 20      # 配置最大连接池大小
+      minimum-idle: 5            # 配置最小空闲连接数
+      idle-timeout: 30000        # 配置空闲连接超时
+      max-lifetime: 1800000      # 配置连接的最大存活时间
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  type-aliases-package: fun.wsss.hmh.entity
+  global-config:
+    db-config:
+      id-type: auto          # 主键自增
+      field-strategy: not_empty  # 字段非空策略
+      logic-delete-value: 1    # 逻辑删除值
+      logic-not-delete-value: 0  # 逻辑未删除值
+  configuration:
+    map-underscore-to-camel-case: true  # 映射数据库字段为驼峰命名
