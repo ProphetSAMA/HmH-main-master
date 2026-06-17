@@ -1,5 +1,10 @@
 package fun.wsss.hmh.websocket;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
@@ -16,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketServer {
     private static final Logger log = LoggerFactory.getLogger(WebSocketServer.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String SECRET_KEY = System.getenv("JWT_SECRET_KEY") != null ?
+            System.getenv("JWT_SECRET_KEY") : "default-dev-key-change-in-production";
 
     /**
      * 用户会话 - 使用 ConcurrentHashMap 存储会话
@@ -54,6 +61,14 @@ public class WebSocketServer {
             String type = (String) data.get("type");
 
             if ("register".equals(type)) {
+                // 验证token
+                String token = (String) data.get("token");
+                if (token == null || !verifyToken(token)) {
+                    log.warn("WebSocket注册失败：token验证失败");
+                    session.getBasicRemote().sendText("{\"type\":\"error\",\"message\":\"token验证失败\"}");
+                    return;
+                }
+
                 // 清理旧连接
                 cleanupConnection();
 
@@ -61,6 +76,15 @@ public class WebSocketServer {
                 Integer newUserId = (Integer) data.get("userId");
 
                 if (newUserId != null) {
+                    // 验证token中的userId与请求的userId是否一致
+                    DecodedJWT jwt = JWT.decode(token);
+                    Integer tokenUserId = jwt.getClaim("userId").asInt();
+                    if (!newUserId.equals(tokenUserId)) {
+                        log.warn("WebSocket注册失败：userId与token不匹配");
+                        session.getBasicRemote().sendText("{\"type\":\"error\",\"message\":\"用户身份验证失败\"}");
+                        return;
+                    }
+
                     // 如果该用户已有连接，先关闭旧连接
                     WebSocketServer existingSession = USER_SESSIONS.get(newUserId);
                     if (existingSession != null && existingSession != this) {
@@ -97,6 +121,26 @@ public class WebSocketServer {
         log.error("WebSocket发生错误：{}", error.getMessage());
         error.printStackTrace(); // 打印堆栈信息
         cleanupConnection();
+    }
+
+    /**
+     * 验证token有效性
+     * @param token JWT token
+     * @return true表示token有效
+     */
+    private boolean verifyToken(String token) {
+        try {
+            JWT.require(Algorithm.HMAC256(SECRET_KEY))
+                    .build()
+                    .verify(token);
+            return true;
+        } catch (TokenExpiredException e) {
+            log.warn("token已过期");
+            return false;
+        } catch (JWTVerificationException e) {
+            log.warn("token验证失败：{}", e.getMessage());
+            return false;
+        }
     }
 
     private void cleanupConnection() {
