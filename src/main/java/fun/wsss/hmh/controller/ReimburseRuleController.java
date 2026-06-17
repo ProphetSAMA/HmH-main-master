@@ -2,7 +2,11 @@ package fun.wsss.hmh.controller;
 
 import fun.wsss.hmh.common.Result;
 import fun.wsss.hmh.entity.ReimburseRule;
+import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.ReimburseRuleService;
+import fun.wsss.hmh.service.UserService;
+import fun.wsss.hmh.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +22,10 @@ import java.util.Map;
 @RequestMapping("/api/reimburse/rule")
 @RequiredArgsConstructor
 public class ReimburseRuleController {
-    
+
     private final ReimburseRuleService reimburseRuleService;
-    
+    private final UserService userService;
+
     /**
      * 获取报销规则列表
      */
@@ -34,12 +39,23 @@ public class ReimburseRuleController {
             return Result.error().message("获取规则列表失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 保存报销规则
      */
     @PostMapping("/save")
-    public Result save(@RequestBody ReimburseRule rule) {
+    public Result save(@RequestBody ReimburseRule rule, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
+        // 验证权限：只有管理员可以管理报销规则
+        if (!"管理员".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法管理报销规则");
+        }
+
         try {
             // 不需要在这里设置时间，交给Service处理
             boolean success = reimburseRuleService.saveOrUpdate(rule);
@@ -49,12 +65,23 @@ public class ReimburseRuleController {
             return Result.error().message("保存失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 删除报销规则
      */
     @DeleteMapping("/{id}")
-    public Result delete(@PathVariable Integer id) {
+    public Result delete(@PathVariable Integer id, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
+        // 验证权限：只有管理员可以删除报销规则
+        if (!"管理员".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法删除报销规则");
+        }
+
         try {
             boolean success = reimburseRuleService.removeById(id);
             return success ? Result.success() : Result.error().message("删除失败");
@@ -63,20 +90,31 @@ public class ReimburseRuleController {
             return Result.error().message("删除失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 更新规则状态
      */
     @PostMapping("/status")
-    public Result updateStatus(@RequestBody Map<String, Object> params) {
+    public Result updateStatus(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
+        // 验证权限：只有管理员可以更新报销规则状态
+        if (!"管理员".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法更新报销规则状态");
+        }
+
         try {
             Integer id = (Integer) params.get("id");
             Integer status = (Integer) params.get("status");
-            
+
             if (id == null || status == null) {
                 return Result.error().message("参数错误");
             }
-            
+
             boolean success = reimburseRuleService.updateStatus(id, status);
             return success ? Result.success() : Result.error().message("更新状态失败");
         } catch (Exception e) {
@@ -84,7 +122,7 @@ public class ReimburseRuleController {
             return Result.error().message("更新状态失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 检查报销金额是否超出限额
      */
@@ -93,11 +131,11 @@ public class ReimburseRuleController {
         try {
             Integer typeId = (Integer) params.get("typeId");
             Double amount = Double.parseDouble(params.get("amount").toString());
-            
+
             if (typeId == null || amount == null) {
                 return Result.error().message("参数错误");
             }
-            
+
             Map<String, Object> result = reimburseRuleService.checkAmount(typeId, amount);
             return Result.success(result);
         } catch (Exception e) {
@@ -105,4 +143,4 @@ public class ReimburseRuleController {
             return Result.error().message("检查金额失败: " + e.getMessage());
         }
     }
-} 
+}
