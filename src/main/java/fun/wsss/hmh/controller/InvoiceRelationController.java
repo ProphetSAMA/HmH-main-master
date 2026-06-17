@@ -3,8 +3,12 @@ package fun.wsss.hmh.controller;
 import fun.wsss.hmh.common.Result;
 import fun.wsss.hmh.entity.Invoice;
 import fun.wsss.hmh.entity.Reimburse;
+import fun.wsss.hmh.entity.User;
 import fun.wsss.hmh.service.InvoiceService;
 import fun.wsss.hmh.service.ReimburseService;
+import fun.wsss.hmh.service.UserService;
+import fun.wsss.hmh.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,22 +22,40 @@ import java.util.Map;
 @RequestMapping("/api/invoice/relation")
 @RequiredArgsConstructor
 public class InvoiceRelationController {
-    
+
     private final InvoiceService invoiceService;
     private final ReimburseService reimburseService;
+    private final UserService userService;
     
     /**
      * 关联发票和报销单
      */
     @PostMapping
-    public Result relateInvoice(@RequestBody Map<String, Object> params) {
+    public Result relateInvoice(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        // 验证用户登录状态
+        User user = TokenUtil.getUserFromToken(request, userService);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+
         Integer invoiceId = (Integer) params.get("invoiceId");
         Integer reimburseId = (Integer) params.get("reimburseId");
-        
+
         if (invoiceId == null || reimburseId == null) {
             return Result.error().message("参数错误");
         }
-        
+
+        // 验证发票所有权
+        Invoice invoice = invoiceService.getById(invoiceId);
+        if (invoice == null) {
+            return Result.error().message("发票不存在");
+        }
+
+        // 只有发票所有者或管理员可以关联
+        if (!invoice.getUserId().equals(user.getId()) && !"管理员".equals(user.getRoleName())) {
+            return Result.error().message("权限不足，无法关联此发票");
+        }
+
         try {
             boolean success = invoiceService.relateInvoice(invoiceId, reimburseId);
             return success ? Result.success() : Result.error().message("关联失败");
