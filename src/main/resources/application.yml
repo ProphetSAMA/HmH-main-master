@@ -14,7 +14,7 @@ spring:
   banner:
     location: banner.txt
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/db_reimbursement?allowPublicKeyRetrieval=true&useSSL=true&serverTimezone=UTC
+    url: jdbc:mysql://127.0.0.1:3306/hmh?allowPublicKeyRetrieval=true&useSSL=true&serverTimezone=UTC
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
