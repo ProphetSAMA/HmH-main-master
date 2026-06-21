@@ -1,5 +1,6 @@
 package fun.wsss.hmh.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import fun.wsss.hmh.dao.ReimburseDao;
@@ -8,9 +9,12 @@ import fun.wsss.hmh.service.ReimburseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 报销Service实现类
@@ -133,9 +137,157 @@ public class ReimburseServiceImpl extends ServiceImpl<ReimburseDao, Reimburse> i
         result.put("pendingCount", reimburseDao.selectCount(pendingWrapper));
         result.put("approvedCount", reimburseDao.selectCount(approvedWrapper));
         result.put("totalAmount", reimburseDao.selectList(null).stream()
-                .mapToDouble(Reimburse::getMoney)
-                .sum());
+                .map(Reimburse::getMoney)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
 
         return result;
+    }
+
+    @Override
+    public BigDecimal getTotalAmount() {
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 1);
+        List<Reimburse> list = list(wrapper);
+        return list.stream()
+                .map(Reimburse::getMoney)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public Integer getPendingCount() {
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 3);
+        return Math.toIntExact(count(wrapper));
+    }
+
+    @Override
+    public Integer getRejectedCount() {
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 2);
+        return Math.toIntExact(count(wrapper));
+    }
+
+    @Override
+    public Integer getApprovedCount() {
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 1);
+        return Math.toIntExact(count(wrapper));
+    }
+
+    @Override
+    public Integer getMonthlyUserCount() {
+        LocalDate now = LocalDate.now();
+        LocalDate startOfMonth = now.withDayOfMonth(1);
+        Date startDate = Date.from(startOfMonth.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ge(Reimburse::getCreateTime, startDate);
+        wrapper.select(Reimburse::getSqUserId);
+        wrapper.groupBy(Reimburse::getSqUserId);
+        List<Reimburse> list = list(wrapper);
+        return list.size();
+    }
+
+    @Override
+    public Double getGrowthRate() {
+        LocalDate now = LocalDate.now();
+        LocalDate thisMonthStart = now.withDayOfMonth(1);
+        LocalDate lastMonthStart = thisMonthStart.minusMonths(1);
+
+        Date thisStart = Date.from(thisMonthStart.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date lastStart = Date.from(lastMonthStart.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        LambdaQueryWrapper<Reimburse> thisMonthWrapper = new LambdaQueryWrapper<>();
+        thisMonthWrapper.eq(Reimburse::getStatus, 1)
+                .ge(Reimburse::getCreateTime, thisStart);
+        BigDecimal thisMonthAmount = list(thisMonthWrapper).stream()
+                .map(Reimburse::getMoney)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        LambdaQueryWrapper<Reimburse> lastMonthWrapper = new LambdaQueryWrapper<>();
+        lastMonthWrapper.eq(Reimburse::getStatus, 1)
+                .ge(Reimburse::getCreateTime, lastStart)
+                .lt(Reimburse::getCreateTime, thisStart);
+        BigDecimal lastMonthAmount = list(lastMonthWrapper).stream()
+                .map(Reimburse::getMoney)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (lastMonthAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return 0.0;
+        }
+        return thisMonthAmount.subtract(lastMonthAmount)
+                .divide(lastMonthAmount, 4, RoundingMode.HALF_UP)
+                .doubleValue() * 100;
+    }
+
+    @Override
+    public BigDecimal getMonthlyAmount(LocalDate month) {
+        LocalDate start = month.withDayOfMonth(1);
+        LocalDate end = start.plusMonths(1);
+        Date startDate = Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date endDate = Date.from(end.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 1)
+                .ge(Reimburse::getCreateTime, startDate)
+                .lt(Reimburse::getCreateTime, endDate);
+        List<Reimburse> list = list(wrapper);
+        return list.stream()
+                .map(Reimburse::getMoney)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal getMonthlyAmount() {
+        return getMonthlyAmount(LocalDate.now());
+    }
+
+    @Override
+    public Integer getMonthlyCount(LocalDate month) {
+        LocalDate start = month.withDayOfMonth(1);
+        LocalDate end = start.plusMonths(1);
+        Date startDate = Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date endDate = Date.from(end.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ge(Reimburse::getCreateTime, startDate)
+                .lt(Reimburse::getCreateTime, endDate);
+        return Math.toIntExact(count(wrapper));
+    }
+
+    @Override
+    public List<Map<String, Object>> getCategoryStats() {
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 1);
+        List<Reimburse> list = list(wrapper);
+
+        Map<String, BigDecimal> categoryMap = new LinkedHashMap<>();
+        for (Reimburse r : list) {
+            String typeName = r.getTypeName() != null ? r.getTypeName() : "未知";
+            BigDecimal money = r.getMoney() != null ? r.getMoney() : BigDecimal.ZERO;
+            categoryMap.merge(typeName, money, BigDecimal::add);
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry : categoryMap.entrySet()) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("category", entry.getKey());
+            map.put("amount", entry.getValue());
+            result.add(map);
+        }
+        return result;
+    }
+
+    @Override
+    public List<Reimburse> getAvailableForInvoice() {
+        LambdaQueryWrapper<Reimburse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reimburse::getStatus, 1);
+        wrapper.orderByDesc(Reimburse::getCreateTime);
+        return list(wrapper);
     }
 }

@@ -1,77 +1,113 @@
 package fun.wsss.hmh.utils;
 
+import fun.wsss.hmh.service.ocr.CloudOcrService;
+import fun.wsss.hmh.service.ocr.LocalOcrService;
+import fun.wsss.hmh.service.ocr.OcrServiceFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.io.File;
-import net.sourceforge.tess4j.Tesseract;
 
 /**
  * OCR识别工具类
- * 注意：这里只是一个示例，实际应用中需要集成第三方OCR服务
- * 如百度OCR、阿里云OCR等
+ * 支持本地OCR和云端OCR服务
  */
+@Slf4j
 @Component
 public class OcrUtil {
-    
+
+    @Autowired
+    private OcrServiceFactory ocrServiceFactory;
+
+    @Autowired
+    private LocalOcrService localOcrService;
+
     /**
      * 识别发票
      * @param filePath 文件路径
      * @return 识别结果
      */
     public Map<String, Object> recognizeInvoice(String filePath) {
-        Map<String, Object> result = new HashMap<>();
-        Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata"); // 路径请根据实际情况修改
-        tesseract.setLanguage("chi_sim");
+        String mode = ocrServiceFactory.getOcrMode();
+        log.info("OCR模式: {}", mode);
 
-        try {
-            String text = tesseract.doOCR(new File(filePath));
-            result.put("rawText", text);
-            System.out.println(text);
-
-            // 发票号码
-            Matcher mNo = Pattern.compile("发票号码[:：]?\\s*([0-9]{10,})").matcher(text);
-            if (mNo.find()) result.put("invoiceNo", mNo.group(1));
-
-            // 开票日期
-            Matcher mDate = Pattern.compile("开票日期[:：]?\\s*([0-9]{4}[年/-][0-9]{1,2}[月/-][0-9]{1,2}日?)").matcher(text);
-            if (mDate.find()) {
-                String dateStr = mDate.group(1).replace("年", "-").replace("月", "-").replace("日", "");
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                result.put("invoiceDate", sdf.parse(dateStr));
-            }
-
-            // 金额（优先价税合计，其次合计）
-            Matcher mTotal = Pattern.compile("价税合计.*?（小写）?¥?([0-9]+\\.?[0-9]*)").matcher(text);
-            if (mTotal.find()) {
-                result.put("amount", new BigDecimal(mTotal.group(1)));
-            } else {
-                Matcher mHeji = Pattern.compile("合计\\s*¥?([0-9]+\\.?[0-9]*)").matcher(text);
-                if (mHeji.find()) result.put("amount", new BigDecimal(mHeji.group(1)));
-            }
-
-            // 销售方
-            Matcher mSeller = Pattern.compile("名称[:：]?([\\u4e00-\\u9fa5A-Za-z0-9（）()·\\s]+)").matcher(text);
-            String seller = null;
-            while (mSeller.find()) {
-                String name = mSeller.group(1).trim();
-                if (name.length() > 4) {
-                    seller = name;
-                    break;
-                }
-            }
-            if (seller != null) result.put("seller", seller);
-
-            return result;
-        } catch (Exception e) {
-            throw new RuntimeException("OCR识别失败", e);
+        if ("cloud".equalsIgnoreCase(mode)) {
+            return recognizeWithCloud(filePath, null);
+        } else {
+            return recognizeWithLocal(filePath);
         }
     }
-} 
+
+    /**
+     * 识别发票（支持URL）
+     * @param filePath 文件路径
+     * @param imageUrl 图片URL
+     * @return 识别结果
+     */
+    public Map<String, Object> recognizeInvoice(String filePath, String imageUrl) {
+        String mode = ocrServiceFactory.getOcrMode();
+        log.info("OCR模式: {}", mode);
+
+        if ("cloud".equalsIgnoreCase(mode)) {
+            return recognizeWithCloud(filePath, imageUrl);
+        } else {
+            return recognizeWithLocal(filePath);
+        }
+    }
+
+    /**
+     * 使用本地OCR识别
+     * @param filePath 文件路径
+     * @return 识别结果
+     */
+    private Map<String, Object> recognizeWithLocal(String filePath) {
+        log.info("使用本地Tesseract OCR识别");
+        return localOcrService.recognizeInvoice(filePath);
+    }
+
+    /**
+     * 使用云端OCR识别
+     * @param filePath 文件路径
+     * @param imageUrl 图片URL
+     * @return 识别结果
+     */
+    private Map<String, Object> recognizeWithCloud(String filePath, String imageUrl) {
+        CloudOcrService cloudService = ocrServiceFactory.getCloudOcrService();
+        if (cloudService == null) {
+            log.warn("云端OCR服务未配置，回退到本地OCR");
+            return recognizeWithLocal(filePath);
+        }
+
+        log.info("使用云端OCR服务: {}", cloudService.getServiceName());
+        return cloudService.recognizeInvoice(filePath, imageUrl);
+    }
+
+    /**
+     * 获取当前OCR模式
+     * @return OCR模式
+     */
+    public String getOcrMode() {
+        return ocrServiceFactory.getOcrMode();
+    }
+
+    /**
+     * 获取当前云端服务商
+     * @return 云端服务商名称
+     */
+    public String getCloudProvider() {
+        if ("cloud".equalsIgnoreCase(ocrServiceFactory.getOcrMode())) {
+            CloudOcrService service = ocrServiceFactory.getCloudOcrService();
+            return service != null ? service.getServiceName() : "none";
+        }
+        return "local";
+    }
+
+    /**
+     * 获取所有可用的云端服务
+     * @return 可用服务列表
+     */
+    public java.util.Set<String> getAvailableCloudServices() {
+        return ocrServiceFactory.getAvailableCloudServices();
+    }
+}

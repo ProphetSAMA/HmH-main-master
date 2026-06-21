@@ -9,6 +9,7 @@ import fun.wsss.hmh.entity.Reimburse;
 import fun.wsss.hmh.service.InvoiceService;
 import fun.wsss.hmh.utils.OcrUtil;
 import fun.wsss.hmh.utils.UserUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,8 @@ import fun.wsss.hmh.dao.InvoiceDao;
 import fun.wsss.hmh.utils.UserContext;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 /**
  * 发票服务实现类
  */
+@Slf4j
 @Service
 public class InvoiceServiceImpl extends ServiceImpl<InvoiceDao, Invoice> implements InvoiceService {
 
@@ -128,7 +132,9 @@ public class InvoiceServiceImpl extends ServiceImpl<InvoiceDao, Invoice> impleme
             
             // 调用OCR识别
             Map<String, Object> ocrResult = ocrUtil.recognizeInvoice(filePath);
-            
+
+            log.info("OCR识别结果: {}", ocrResult);
+
             // 提取发票信息
             String invoiceNo = (String) ocrResult.get("invoiceNo");
             String invoiceCode = (String) ocrResult.get("invoiceCode");
@@ -152,8 +158,41 @@ public class InvoiceServiceImpl extends ServiceImpl<InvoiceDao, Invoice> impleme
             Invoice invoice = new Invoice();
             invoice.setInvoiceNo(invoiceNo);
             invoice.setInvoiceCode(invoiceCode);
-            invoice.setAmount((java.math.BigDecimal) ocrResult.get("amount"));
-            invoice.setInvoiceDate((Date) ocrResult.get("invoiceDate"));
+            invoice.setAmount((BigDecimal) ocrResult.get("amount"));
+
+            // 处理日期 - 支持Date对象和字符串格式
+            Object invoiceDate = ocrResult.get("invoiceDate");
+            if (invoiceDate instanceof Date) {
+                invoice.setInvoiceDate((Date) invoiceDate);
+            } else if (invoiceDate instanceof String) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    invoice.setInvoiceDate(sdf.parse((String) invoiceDate));
+                } catch (Exception e) {
+                    log.warn("解析日期失败: {}", invoiceDate, e);
+                }
+            } else if (ocrResult.containsKey("invoiceDateStr")) {
+                // 云端OCR返回的日期字符串
+                String dateStr = (String) ocrResult.get("invoiceDateStr");
+                try {
+                    // 尝试多种日期格式
+                    SimpleDateFormat[] formats = {
+                        new SimpleDateFormat("yyyy年MM月dd日"),
+                        new SimpleDateFormat("yyyy-MM-dd"),
+                        new SimpleDateFormat("yyyy/MM/dd")
+                    };
+                    for (SimpleDateFormat format : formats) {
+                        try {
+                            invoice.setInvoiceDate(format.parse(dateStr));
+                            break;
+                        } catch (Exception ignored) {
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("解析日期字符串失败: {}", dateStr, e);
+                }
+            }
+
             invoice.setSeller((String) ocrResult.get("seller"));
             invoice.setImageUrl("/uploads/" + filename);
             invoice.setStatus(0); // 未使用

@@ -90,4 +90,11 @@ public class Invoice {
      */
     @TableField("update_time")
     private Date updateTime;
+
+    /**
+     * 获取用户ID（用于权限检查，映射到createUserId）
+     */
+    public Integer getUserId() {
+        return this.createUserId;
+    }
 }

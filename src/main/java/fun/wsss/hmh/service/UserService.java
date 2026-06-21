@@ -74,4 +74,11 @@ public interface UserService {
      * @return 用户信息
      */
     User getUserById(int id);
+
+    /**
+     * 获取系统用户总数
+     *
+     * @return 用户数
+     */
+    int getUserCount();
 }

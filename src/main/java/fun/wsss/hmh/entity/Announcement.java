@@ -59,4 +59,16 @@ public class Announcement {
      * 状态：1-有效 0-无效
      */
     private Integer status;
+
+    /**
+     * 发布者ID
+     */
+    @TableField(exist = false)
+    private Integer publisherId;
+
+    /**
+     * 发布者姓名
+     */
+    @TableField(exist = false)
+    private String publisherName;
 }

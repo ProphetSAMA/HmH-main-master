@@ -43,10 +43,11 @@ public class StatsServiceImpl implements StatsService {
         List<Reimburse> list = reimburseService.list(wrapper);
         
         // 计算总报销金额
-        double totalAmount = list.stream()
+        BigDecimal totalAmount = list.stream()
                 .filter(r -> r.getStatus() == 1) // 已通过的报销单
-                .mapToDouble(Reimburse::getMoney)
-                .sum();
+                .map(Reimburse::getMoney)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         // 计算待审核报销单数量
         long pendingCount = list.stream()
@@ -121,7 +122,7 @@ public class StatsServiceImpl implements StatsService {
             LocalDate date = reimburse.getCreateTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             String dateStr = date.format(formatter);
             
-            dateAmountMap.put(dateStr, dateAmountMap.getOrDefault(dateStr, 0.0) + reimburse.getMoney());
+            dateAmountMap.put(dateStr, dateAmountMap.getOrDefault(dateStr, 0.0) + reimburse.getMoney().doubleValue());
         }
         
         // 构建结果
@@ -153,7 +154,7 @@ public class StatsServiceImpl implements StatsService {
         List<Reimburse> list = reimburseService.list(wrapper);
         
         // 获取所有报销类型
-        List<Type> types = typeService.getAllTypes();
+        List<Type> types = typeService.list();
         Map<Integer, String> typeMap = types.stream()
                 .collect(Collectors.toMap(Type::getId, Type::getType));
         
@@ -162,7 +163,7 @@ public class StatsServiceImpl implements StatsService {
         
         for (Reimburse reimburse : list) {
             Integer typeId = reimburse.getTypeId();
-            typeAmountMap.put(typeId, typeAmountMap.getOrDefault(typeId, 0.0) + reimburse.getMoney());
+            typeAmountMap.put(typeId, typeAmountMap.getOrDefault(typeId, 0.0) + reimburse.getMoney().doubleValue());
         }
         
         // 构建结果
